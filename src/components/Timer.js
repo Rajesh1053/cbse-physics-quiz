@@ -13,7 +13,9 @@ function Timer({ timeLeft, dispatch }) {
   }, [timeLeft, dispatch]);
 
   return (
-    <div className="text-xl font-bold text-red-500">Time Left: {timeLeft}s</div>
+    <div className="text-xl font-bold text-red-600 mb-4 sm:text-2xl">
+      Time Left: {timeLeft}s
+    </div>
   );
 }
 

@@ -32,7 +32,7 @@ const quizReducer = (state, action) => {
   }
 };
 
-function Quiz({ questions, onQuizEnd }) {
+function Quiz({ questions, onQuizEnd, topic }) {
   const [state, dispatch] = useReducer(quizReducer, {
     currentQuestion: 0,
     score: 0,
@@ -59,7 +59,10 @@ function Quiz({ questions, onQuizEnd }) {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
+      <h2 className="text-2xl font-bold text-gray-800 mb-4 capitalize">
+        {topic.replace(/-/g, " ")} Quiz
+      </h2>
       <Timer timeLeft={state.timeLeft} dispatch={dispatch} />
       <Question
         question={questions[state.currentQuestion].question}
@@ -67,7 +70,7 @@ function Quiz({ questions, onQuizEnd }) {
         onAnswer={handleAnswer}
         selectedAnswer={state.selectedAnswer}
       />
-      <p className="text-lg">
+      <p className="text-lg text-gray-600 mt-4">
         Question {state.currentQuestion + 1} of {questions.length}
       </p>
     </div>
