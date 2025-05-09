@@ -2,6 +2,7 @@ import { useReducer } from "react";
 import Home from "./components/Home";
 import Quiz from "./components/Quiz";
 import Result from "./components/Result";
+import NavMenu from "./components/NavMenu";
 import "./index.css";
 
 const mainTopics = [
@@ -825,14 +826,17 @@ function App() {
           <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
             Quiz App
           </h1>
-          {state.screen !== "home" && (
-            <button
-              onClick={handleGoHome}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Home
-            </button>
-          )}
+          <div className="flex items-center gap-4">
+            {state.screen !== "home" && (
+              <button
+                onClick={handleGoHome}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Home
+              </button>
+            )}
+            <NavMenu mainTopics={mainTopics} />
+          </div>
         </div>
       </nav>
       <main className="flex-grow flex items-center justify-center p-4">

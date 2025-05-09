@@ -9,7 +9,11 @@ function Home({ mainTopics, onSelectTopic }) {
         competitive exams.
       </p>
       {mainTopics.map((mainTopic) => (
-        <div key={mainTopic.name} className="w-full max-w-5xl mb-12">
+        <div
+          key={mainTopic.name}
+          id={mainTopic.name.toLowerCase().replace(/ /g, "-")}
+          className="w-full max-w-5xl mb-12 scroll-mt-20"
+        >
           <h2 className="text-3xl font-semibold text-gray-800 mb-6">
             {mainTopic.name}
           </h2>
