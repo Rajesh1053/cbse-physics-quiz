@@ -1,15 +1,25 @@
-import Confetti from "react-confetti";
 import { useEffect, useState } from "react";
+import Confetti from "react-confetti";
 import Explanation from "./Explanation";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  doc,
+} from "firebase/firestore";
 
 function Result({
   score,
-  highScore,
   questions,
   answers,
   onRestart,
   onGoHome,
   topic,
+  user,
 }) {
   const [showConfetti, setShowConfetti] = useState(false);
   const percentage = (score / questions.length) * 100;
@@ -21,6 +31,45 @@ function Result({
   };
 
   const performance = getPerformance();
+
+  useEffect(() => {
+    const saveScore = async () => {
+      if (user) {
+        // Save quiz attempt
+        await addDoc(collection(db, "scores"), {
+          userId: user.uid,
+          topic,
+          score,
+          totalQuestions: questions.length,
+          percentage,
+          timestamp: new Date(),
+        });
+
+        // Update high score
+        const highScoreQuery = query(
+          collection(db, "highScores"),
+          where("userId", "==", user.uid),
+          where("topic", "==", topic)
+        );
+        const highScoreSnapshot = await getDocs(highScoreQuery);
+        if (
+          highScoreSnapshot.empty ||
+          highScoreSnapshot.docs[0].data().score < score
+        ) {
+          await setDoc(
+            doc(db, "highScores", `${user.uid}_${topic}`),
+            {
+              userId: user.uid,
+              topic,
+              score,
+            },
+            { merge: true }
+          );
+        }
+      }
+    };
+    saveScore();
+  }, [score, questions.length, topic, user, percentage]);
 
   useEffect(() => {
     if (performance.rank <= 2) {
@@ -42,7 +91,6 @@ function Result({
       <p className="text-xl text-gray-600 mb-2">
         Your Score: {score} / {questions.length} ({percentage.toFixed(1)}%)
       </p>
-      <p className="text-xl text-gray-600 mb-2">High Score: {highScore}</p>
       <p className="text-xl text-gray-600 mb-6">
         Rank: {performance.rank} ({performance.label} {performance.emoji})
       </p>

@@ -1,8 +1,12 @@
-import { useReducer } from "react";
+import { useReducer, useEffect, useState } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "./firebase";
 import Home from "./components/Home";
 import Quiz from "./components/Quiz";
 import Result from "./components/Result";
 import NavMenu from "./components/NavMenu";
+import Login from "./components/Login";
+import Profile from "./components/Profile";
 import "./index.css";
 
 const mainTopics = [
@@ -760,17 +764,10 @@ const appReducer = (state, action) => {
         answers: [],
       };
     case "END_QUIZ":
-      const highScoreKey = `highScore_${action.topic}`;
-      const currentHighScore = parseInt(
-        localStorage.getItem(highScoreKey) || 0
-      );
-      const newHighScore = Math.max(currentHighScore, action.score);
-      localStorage.setItem(highScoreKey, newHighScore);
       return {
         ...state,
         screen: "result",
         score: action.score,
-        highScore: newHighScore,
         answers: action.answers,
       };
     case "RESTART_QUIZ":
@@ -781,9 +778,12 @@ const appReducer = (state, action) => {
         screen: "home",
         selectedTopic: null,
         score: 0,
-        highScore: 0,
         answers: [],
       };
+    case "GO_PROFILE":
+      return { ...state, screen: "profile" };
+    case "GO_LOGIN":
+      return { ...state, screen: "login" };
     default:
       return state;
   }
@@ -791,24 +791,35 @@ const appReducer = (state, action) => {
 
 function App() {
   const [state, dispatch] = useReducer(appReducer, {
-    screen: "home",
+    screen: "login",
     selectedTopic: null,
     score: 0,
-    highScore: 0,
     answers: [],
   });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+      if (currentUser && state.screen === "login") {
+        dispatch({ type: "GO_HOME" });
+      }
+    });
+    return () => unsubscribe();
+  }, [state.screen]);
 
   const handleSelectTopic = (topic) => {
-    dispatch({ type: "SELECT_TOPIC", topic });
+    if (user) {
+      dispatch({ type: "SELECT_TOPIC", topic });
+    } else {
+      dispatch({ type: "GO_LOGIN" });
+    }
   };
 
   const handleQuizEnd = (finalScore, answers) => {
-    dispatch({
-      type: "END_QUIZ",
-      score: finalScore,
-      topic: state.selectedTopic,
-      answers,
-    });
+    dispatch({ type: "END_QUIZ", score: finalScore, answers });
   };
 
   const handleRestart = () => {
@@ -819,10 +830,35 @@ function App() {
     dispatch({ type: "GO_HOME" });
   };
 
+  const handleGoProfile = () => {
+    if (user) {
+      dispatch({ type: "GO_PROFILE" });
+    } else {
+      dispatch({ type: "GO_LOGIN" });
+    }
+  };
+
+  const handleLogin = () => {
+    dispatch({ type: "GO_HOME" });
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    dispatch({ type: "GO_LOGIN" });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+        <p className="text-xl text-gray-800">Loading...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col">
       <nav className="bg-white shadow-md p-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
+        <div className="max-w-5xl mx-auto flex justify-between items-center flex-wrap gap-4">
           <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
             Quiz App
           </h1>
@@ -835,6 +871,29 @@ function App() {
                 Home
               </button>
             )}
+            {user ? (
+              <>
+                <button
+                  onClick={handleGoProfile}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => dispatch({ type: "GO_LOGIN" })}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Login
+              </button>
+            )}
             <NavMenu mainTopics={mainTopics} />
           </div>
         </div>
@@ -842,22 +901,27 @@ function App() {
       <main className="flex-grow flex items-center justify-center p-4">
         {state.screen === "home" ? (
           <Home mainTopics={mainTopics} onSelectTopic={handleSelectTopic} />
-        ) : state.screen === "quiz" ? (
+        ) : state.screen === "quiz" && user ? (
           <Quiz
             questions={quizData[state.selectedTopic]}
             onQuizEnd={handleQuizEnd}
             topic={state.selectedTopic}
+            user={user}
           />
-        ) : (
+        ) : state.screen === "result" && user ? (
           <Result
             score={state.score}
-            highScore={state.highScore}
             questions={quizData[state.selectedTopic]}
             answers={state.answers}
             onRestart={handleRestart}
             onGoHome={handleGoHome}
             topic={state.selectedTopic}
+            user={user}
           />
+        ) : state.screen === "profile" && user ? (
+          <Profile />
+        ) : (
+          <Login onLogin={handleLogin} />
         )}
       </main>
       <footer className="bg-gray-800 text-white text-center p-4">

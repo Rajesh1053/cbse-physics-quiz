@@ -50,7 +50,7 @@ const quizReducer = (state, action) => {
   }
 };
 
-function Quiz({ questions, onQuizEnd, topic }) {
+function Quiz({ questions, onQuizEnd, topic, user }) {
   const [state, dispatch] = useReducer(quizReducer, {
     currentQuestion: 0,
     score: 0,
@@ -70,20 +70,20 @@ function Quiz({ questions, onQuizEnd, topic }) {
       if (state.currentQuestion + 1 < questions.length) {
         dispatch({ type: "NEXT_QUESTION" });
       } else {
-        onQuizEnd(
+        const finalScore =
           state.score +
-            (answer === questions[state.currentQuestion].correctAnswer ? 1 : 0),
-          [
-            ...state.answers,
-            {
-              question: questions[state.currentQuestion].question,
-              selectedAnswer: answer,
-              correctAnswer: questions[state.currentQuestion].correctAnswer,
-              isCorrect:
-                answer === questions[state.currentQuestion].correctAnswer,
-            },
-          ]
-        );
+          (answer === questions[state.currentQuestion].correctAnswer ? 1 : 0);
+        const finalAnswers = [
+          ...state.answers,
+          {
+            question: questions[state.currentQuestion].question,
+            selectedAnswer: answer,
+            correctAnswer: questions[state.currentQuestion].correctAnswer,
+            isCorrect:
+              answer === questions[state.currentQuestion].correctAnswer,
+          },
+        ];
+        onQuizEnd(finalScore, finalAnswers);
       }
     }, 1000);
   };
