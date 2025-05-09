@@ -10,6 +10,15 @@ const quizReducer = (state, action) => {
         ...state,
         selectedAnswer: action.answer,
         score: isCorrect ? state.score + 1 : state.score,
+        answers: [
+          ...state.answers,
+          {
+            question: action.question,
+            selectedAnswer: action.answer,
+            correctAnswer: action.correctAnswer,
+            isCorrect,
+          },
+        ],
       };
     case "NEXT_QUESTION":
       return {
@@ -26,6 +35,15 @@ const quizReducer = (state, action) => {
         currentQuestion: state.currentQuestion + 1,
         timeLeft: 30,
         selectedAnswer: null,
+        answers: [
+          ...state.answers,
+          {
+            question: action.question,
+            selectedAnswer: null,
+            correctAnswer: action.correctAnswer,
+            isCorrect: false,
+          },
+        ],
       };
     default:
       return state;
@@ -38,6 +56,7 @@ function Quiz({ questions, onQuizEnd, topic }) {
     score: 0,
     timeLeft: 30,
     selectedAnswer: null,
+    answers: [],
   });
 
   const handleAnswer = (answer) => {
@@ -45,6 +64,7 @@ function Quiz({ questions, onQuizEnd, topic }) {
       type: "SELECT_ANSWER",
       answer,
       correctAnswer: questions[state.currentQuestion].correctAnswer,
+      question: questions[state.currentQuestion].question,
     });
     setTimeout(() => {
       if (state.currentQuestion + 1 < questions.length) {
@@ -52,7 +72,17 @@ function Quiz({ questions, onQuizEnd, topic }) {
       } else {
         onQuizEnd(
           state.score +
-            (answer === questions[state.currentQuestion].correctAnswer ? 1 : 0)
+            (answer === questions[state.currentQuestion].correctAnswer ? 1 : 0),
+          [
+            ...state.answers,
+            {
+              question: questions[state.currentQuestion].question,
+              selectedAnswer: answer,
+              correctAnswer: questions[state.currentQuestion].correctAnswer,
+              isCorrect:
+                answer === questions[state.currentQuestion].correctAnswer,
+            },
+          ]
         );
       }
     }, 1000);
@@ -61,9 +91,14 @@ function Quiz({ questions, onQuizEnd, topic }) {
   return (
     <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 sm:p-8">
       <h2 className="text-2xl font-bold text-gray-800 mb-4 capitalize">
-        {topic.replace(/-/g, " ")} Quiz
+        {topic.replace(/-/g, " ").replace("comp ", "")} Quiz
       </h2>
-      <Timer timeLeft={state.timeLeft} dispatch={dispatch} />
+      <Timer
+        timeLeft={state.timeLeft}
+        dispatch={dispatch}
+        question={questions[state.currentQuestion].question}
+        correctAnswer={questions[state.currentQuestion].correctAnswer}
+      />
       <Question
         question={questions[state.currentQuestion].question}
         options={questions[state.currentQuestion].options}
